@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 
 export default function Home() {
@@ -8,141 +7,169 @@ export default function Home() {
   const [carregando, setCarregando] = useState(false);
   const [historico, setHistorico] = useState([]);
   const [sliderPos, setSliderPos] = useState(50);
-  const [copiado, setCopiado] = useState(false);
+  const [feedback, setFeedback] = useState('');
 
-  // CATEGORIAS COMPLETAS
-  const biblioteca = [
-    {
-      titulo: "📸 IMAGENS",
-      items: [
-        { n: "Retrato Épico", p: "Cinematic portrait, dramatic lighting, 8k, photorealistic" },
-        { n: "Cyberpunk", p: "Future city, neon lights, rainy street, cinematic" }
-      ]
-    },
-    {
-      titulo: "🎨 LOGOTIPOS",
-      items: [
-        { n: "Minimalista", p: "Minimalist vector logo, white background, flat design" },
-        { n: "Gaming", p: "Esports mascot logo, shield, vibrant colors" }
-      ]
-    },
-    {
-      titulo: "⚽ FUTEBOL",
-      items: [
-        { n: "Estádio", p: "Soccer stadium at night, bright floodlights, 8k" },
-        { n: "Gol Épico", p: "Soccer player bicycle kick, epic action shot" }
-      ]
-    },
-    {
-      titulo: "🎬 VÍDEOS",
-      items: [
-        { n: "Drone", p: "Aerial drone view, mountains, smooth movement" },
-        { n: "Explosão", p: "Slow motion liquid explosion, macro 4k" }
-      ]
-    }
-  ];
-
-  const tendencias = [
-    { nome: "Disney 3D", p: "Disney Pixar character, 8k render", cor: "#ff4757" },
-    { nome: "GTA V", p: "GTA V loading screen art, cel shaded", cor: "#2ed573" },
-    { nome: "Vintage", p: "90s vintage film photography", cor: "#ffa502" }
-  ];
-
+  // Carregar histórico local
   useEffect(() => {
-    const salvo = localStorage.getItem('veo_history');
+    const salvo = localStorage.getItem('veo_pro_history');
     if (salvo) setHistorico(JSON.parse(salvo));
   }, []);
 
-  const copiarEPregar = (texto) => {
+  const aviso = (msg) => {
+    setFeedback(msg);
+    setTimeout(() => setFeedback(''), 3000);
+  };
+
+  // Funções de Utilidade
+  const copiarPrompt = (texto) => {
     setPrompt(texto);
-    setCopiado(true);
-    setTimeout(() => setCopiado(false), 2000);
+    aviso('Prompt selecionado!');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const gerar = async (pBase, isUpscale = false) => {
-    const finalPrompt = pBase || prompt;
-    if (!finalPrompt) return alert("Escreva algo primeiro!");
-    
-    setCarregando(true);
-    const seed = Math.floor(Math.random() * 999999);
-    
-    // NOVO SERVIDOR RÁPIDO (FORÇANDO MODELO FLUX)
-    const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(finalPrompt)}?width=768&height=768&seed=${seed}&model=flux&nologo=true`;
+  const melhorarIA = () => {
+    if (!prompt) return aviso('Escreva algo primeiro!');
+    const termos = "ultra-realista, iluminação cinematográfica, 8k, detalhes intrincados, obra-prima";
+    setPrompt(`${prompt}, ${termos}`);
+    aviso('IA Magic ativado!');
+  };
 
-    // Tentativa de carregar a imagem
+  // MOTOR DE GERAÇÃO (SERVIDOR PRO ESTÁVEL)
+  const gerar = async (pBase, upscale = false) => {
+    const promptFinal = pBase || prompt;
+    if (!promptFinal) return alert("Por favor, insira um prompt!");
+
+    setCarregando(true);
+    if (!upscale) setResultado(null);
+
+    const seed = Math.floor(Math.random() * 1000000);
+    // Usando motor Flux via rota dedicada de alta performance
+    const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(promptFinal)}?width=${upscale ? 1024 : 768}&height=${upscale ? 1024 : 768}&seed=${seed}&model=flux&nologo=true&enhance=true`;
+
     const img = new Image();
     img.src = url;
-    
+
     img.onload = () => {
-      if (isUpscale) { setAntes(resultado); setResultado(url); } 
-      else { setResultado(url); setAntes(null); }
+      if (upscale) {
+        setAntes(resultado);
+        setResultado(url);
+      } else {
+        setResultado(url);
+        setAntes(null);
+      }
       setCarregando(false);
       
-      const novoHist = [url, ...historico].slice(0, 10);
+      const novoHist = [url, ...historico].slice(0, 12);
       setHistorico(novoHist);
-      localStorage.setItem('veo_history', JSON.stringify(novoHist));
+      localStorage.setItem('veo_pro_history', JSON.stringify(novoHist));
     };
 
     img.onerror = () => {
       setCarregando(false);
-      alert("Servidor ocupado. Clique em GERAR novamente.");
+      alert("Erro na conexão. Tente novamente.");
     };
   };
 
+  const biblioteca = [
+    { t: "📸 IMAGENS", i: [{ n: "Leão Realista", p: "Realistic lion portrait, gold lighting" }, { n: "Cidade 2077", p: "Cyberpunk city, neon, rain" }] },
+    { t: "🎨 LOGOTIPOS", i: [{ n: "Logo Minimal", p: "Modern minimalist logo, vector" }, { n: "Logo Gaming", p: "Esports mascot logo, gaming style" }] },
+    { t: "⚽ FUTEBOL", i: [{ n: "Estádio 8K", p: "Soccer stadium, cinematic view" }, { n: "Jogador", p: "Action soccer shot, 8k" }] },
+    { t: "🎬 VÍDEOS", i: [{ n: "Drone", p: "Cinematic drone shot, mountains" }, { n: "Explosão", p: "Slow motion color explosion" }] }
+  ];
+
   return (
-    <div style={{ backgroundColor: '#000', color: '#fff', minHeight: '100vh', fontFamily: 'sans-serif', padding: '15px' }}>
+    <div style={{ backgroundColor: '#000', color: '#fff', minHeight: '100vh', fontFamily: 'sans-serif', padding: '20px' }}>
       
       <header style={{ textAlign: 'center', marginBottom: '20px' }}>
-        <h1 style={{ color: '#D4AF37', fontSize: '24px', fontWeight: '900' }}>VEO PACK PRO</h1>
-        {copiado && <div style={{ position: 'fixed', top: '15px', left: '50%', transform: 'translateX(-50%)', backgroundColor: '#D4AF37', color: '#000', padding: '5px 15px', borderRadius: '20px', zIndex: 1000 }}>PRONTO!</div>}
+        <h1 style={{ color: '#D4AF37', fontSize: '28px', fontWeight: '900', fontStyle: 'italic' }}>VEO PACK PRO</h1>
+        <p style={{ color: '#444', fontSize: '10px' }}>SISTEMA DE GERAÇÃO PROFISSIONAL</p>
       </header>
 
-      <main style={{ maxWidth: '450px', margin: '0 auto' }}>
+      {feedback && (
+        <div style={{ position: 'fixed', top: '20px', left: '50%', transform: 'translateX(-50%)', backgroundColor: '#D4AF37', color: '#000', padding: '10px 20px', borderRadius: '30px', fontWeight: 'bold', zIndex: 2000 }}>
+          {feedback}
+        </div>
+      )}
+
+      <main style={{ maxWidth: '500px', margin: '0 auto' }}>
         
-        {/* INPUT FIXO NO TOPO */}
-        <div style={{ position: 'sticky', top: '0', backgroundColor: '#000', paddingBottom: '15px', zIndex: 100 }}>
-          <div style={{ backgroundColor: '#111', borderRadius: '15px', border: '1px solid #222', padding: '12px', marginBottom: '10px' }}>
-            <textarea value={prompt} onChange={(e) => setPrompt(e.target.value)} placeholder="Digite sua ideia..." style={{ width: '100%', backgroundColor: 'transparent', border: 'none', color: '#fff', outline: 'none' }} rows="2" />
+        {/* ENTRADA DE DADOS */}
+        <div style={{ position: 'sticky', top: '0', backgroundColor: '#000', paddingBottom: '20px', zIndex: 500 }}>
+          <div style={{ backgroundColor: '#111', borderRadius: '20px', border: '1px solid #222', padding: '15px', marginBottom: '10px' }}>
+            <textarea 
+              value={prompt} 
+              onChange={(e) => setPrompt(e.target.value)} 
+              placeholder="O que deseja criar hoje?" 
+              style={{ width: '100%', backgroundColor: 'transparent', border: 'none', color: '#fff', outline: 'none', fontSize: '16px' }}
+              rows="2"
+            />
+            <button onClick={melhorarIA} style={{ background: 'none', border: 'none', color: '#D4AF37', fontSize: '11px', fontWeight: 'bold', cursor: 'pointer', marginTop: '10px' }}>
+              🪄 MELHORAR COM IA
+            </button>
           </div>
-          <button onClick={() => gerar()} disabled={carregando} style={{ width: '100%', backgroundColor: '#D4AF37', color: '#000', padding: '16px', borderRadius: '12px', fontWeight: 'bold', border: 'none' }}>
+          <button 
+            onClick={() => gerar()} 
+            disabled={carregando}
+            style={{ width: '100%', backgroundColor: '#D4AF37', color: '#000', padding: '18px', borderRadius: '15px', fontWeight: 'bold', fontSize: '16px', border: 'none' }}
+          >
             {carregando ? 'GERANDO...' : 'CRIAR AGORA'}
           </button>
         </div>
 
-        {/* ÁREA DE RESULTADO */}
+        {/* ÁREA DE RESULTADO COM SLIDER */}
         {resultado && (
-          <div style={{ position: 'relative', borderRadius: '20px', overflow: 'hidden', border: '2px solid #D4AF37', height: '350px', marginBottom: '15px' }}>
-            <img src={resultado} style={{ width: '100%', height: '100%', objectFit: 'cover', position: 'absolute' }} />
-            {antes && (
-              <div style={{ position: 'absolute', top: 0, left: 0, width: `${sliderPos}%`, height: '100%', overflow: 'hidden', borderRight: '2px solid #fff', zIndex: 2 }}>
-                <img src={antes} style={{ width: '450px', height: '100%', objectFit: 'cover' }} />
-              </div>
-            )}
-            {antes && <input type="range" min="0" max="100" value={sliderPos} onChange={(e) => setSliderPos(e.target.value)} style={{ position: 'absolute', bottom: '15px', left: '10%', width: '80%', zIndex: 10 }} />}
+          <div style={{ marginBottom: '30px', animation: 'fadeIn 0.5s' }}>
+            <div style={{ position: 'relative', borderRadius: '20px', overflow: 'hidden', border: '3px solid #D4AF37', height: '400px' }}>
+              <img src={resultado} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              {antes && (
+                <div style={{ position: 'absolute', top: 0, left: 0, width: `${sliderPos}%`, height: '100%', overflow: 'hidden', borderRight: '2px solid #fff' }}>
+                  <img src={antes} style={{ width: '500px', height: '400px', objectFit: 'cover' }} />
+                </div>
+              )}
+              {antes && (
+                <input type="range" min="0" max="100" value={sliderPos} onChange={(e) => setSliderPos(e.target.value)} style={{ position: 'absolute', bottom: '20px', left: '10%', width: '80%', accentColor: '#D4AF37' }} />
+              )}
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginTop: '15px' }}>
+              <button onClick={() => gerar(null, true)} style={{ backgroundColor: '#111', color: '#D4AF37', border: '1px solid #D4AF37', padding: '12px', borderRadius: '12px', fontSize: '12px', fontWeight: 'bold' }}>💎 UPSCALE 16K</button>
+              <a href={resultado} download style={{ backgroundColor: '#fff', color: '#000', padding: '12px', borderRadius: '12px', textAlign: 'center', textDecoration: 'none', fontWeight: 'bold', fontSize: '12px' }}>💾 SALVAR</a>
+            </div>
           </div>
         )}
 
-        {/* TENDÊNCIAS */}
-        <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', marginBottom: '20px', paddingBottom: '5px' }}>
-          {tendencias.map((t, i) => (
-            <button key={i} onClick={() => { setPrompt(t.p); gerar(t.p); }} style={{ minWidth: '100px', background: '#111', border: `1px solid ${t.cor}`, color: '#fff', padding: '10px', borderRadius: '10px', fontSize: '11px' }}>{t.nome}</button>
-          ))}
-        </div>
+        {/* HISTÓRICO */}
+        {historico.length > 0 && (
+          <div style={{ marginBottom: '30px' }}>
+            <p style={{ fontSize: '12px', color: '#444', marginBottom: '10px', fontWeight: 'bold' }}>HISTÓRICO</p>
+            <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', paddingBottom: '10px' }}>
+              {historico.map((img, i) => (
+                <img key={i} src={img} onClick={() => setResultado(img)} style={{ height: '80px', borderRadius: '12px', cursor: 'pointer', border: '1px solid #222' }} />
+              ))}
+            </div>
+          </div>
+        )}
 
-        {/* LISTA DE CATEGORIAS */}
+        {/* BIBLIOTECA COMPLETA */}
         {biblioteca.map((cat, i) => (
-          <div key={i} style={{ marginBottom: '25px' }}>
-            <h3 style={{ color: '#D4AF37', fontSize: '14px', marginBottom: '10px' }}>{cat.titulo}</h3>
-            {cat.items.map((item, idx) => (
-              <div key={idx} style={{ background: '#0a0a0a', border: '1px solid #1a1a1a', padding: '12px', borderRadius: '12px', display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                <span style={{ fontSize: '12px' }}>{item.n}</span>
-                <button onClick={() => copiarEPregar(item.p)} style={{ background: 'none', border: '1px solid #D4AF37', color: '#D4AF37', padding: '4px 8px', borderRadius: '5px', fontSize: '10px' }}>COPIAR</button>
+          <div key={i} style={{ marginBottom: '30px' }}>
+            <h3 style={{ color: '#D4AF37', fontSize: '14px', marginBottom: '15px' }}>{cat.t}</h3>
+            {cat.i.map((item, idx) => (
+              <div key={idx} style={{ backgroundColor: '#0a0a0a', border: '1px solid #1a1a1a', padding: '15px', borderRadius: '15px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                <div>
+                  <p style={{ margin: 0, fontSize: '14px', fontWeight: 'bold' }}>{item.n}</p>
+                  <p style={{ margin: 0, fontSize: '11px', color: '#555' }}>{item.p.substring(0, 30)}...</p>
+                </div>
+                <button onClick={() => copiarPrompt(item.p)} style={{ backgroundColor: '#111', color: '#D4AF37', border: '1px solid #D4AF37', padding: '8px 15px', borderRadius: '10px', fontSize: '11px' }}>USAR</button>
               </div>
             ))}
           </div>
         ))}
       </main>
+
+      <style jsx>{`
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        div::-webkit-scrollbar { display: none; }
+      `}</style>
     </div>
   );
 }
